@@ -1,4 +1,5 @@
 FROM node:24-trixie
+RUN apt update && apt install -y git-lfs && apt clean && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
 RUN curl -fsSL https://get.docker.com -o get-docker.sh && chmod 755 get-docker.sh && ./get-docker.sh
 
 LABEL org.opencontainers.image.title="node-24-docker" \
