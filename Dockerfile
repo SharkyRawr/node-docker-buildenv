@@ -1,10 +1,10 @@
-FROM node:24-trixie
+FROM node:25-trixie
 RUN apt update && apt install -y git-lfs && apt clean && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
 RUN curl -fsSL https://get.docker.com -o get-docker.sh && chmod 755 get-docker.sh && ./get-docker.sh
 
-LABEL org.opencontainers.image.title="node-24-docker" \
-      org.opencontainers.image.description="Node.js 24:trixie base image with Docker client installed" \
+LABEL org.opencontainers.image.title="node-25-docker" \
+      org.opencontainers.image.description="Node.js 25:trixie base image with Docker client installed" \
       org.opencontainers.image.authors="SharkyRawr" \
-      org.opencontainers.image.url="https://github.com/SharkyRawr/node-24-docker" \
-      org.opencontainers.image.source="https://github.com/SharkyRawr/node-24-docker" \
+      org.opencontainers.image.url="https://github.com/SharkyRawr/node-docker-buildenv" \
+      org.opencontainers.image.source="https://github.com/SharkyRawr/node-docker-buildenv" \
       org.opencontainers.image.licenses="Apache-2.0"
