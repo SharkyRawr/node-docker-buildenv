@@ -3,9 +3,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y git-lfs 
 
 # Install pnpm
 RUN curl -fsSL https://get.pnpm.io/install.sh -o install-pnpm.sh && chmod +x install-pnpm.sh && SHELL=bash ./install-pnpm.sh && rm install-pnpm.sh
-ENV PNPM_HOME="/pnpm"
+ENV PNPM_HOME="/root/.local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
 
 RUN curl -fsSL https://get.docker.com -o get-docker.sh && chmod 755 get-docker.sh && ./get-docker.sh && rm ./get-docker.sh
 
