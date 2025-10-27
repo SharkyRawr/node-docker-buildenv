@@ -1,5 +1,6 @@
 FROM node:25-trixie
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y git-lfs && apt clean && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
+RUN curl -fsSL https://get.pnpm.io/install.sh | sh -
 RUN curl -fsSL https://get.docker.com -o get-docker.sh && chmod 755 get-docker.sh && ./get-docker.sh
 
 LABEL org.opencontainers.image.title="node-25-docker" \
