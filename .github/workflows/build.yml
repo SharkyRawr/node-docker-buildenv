@@ -68,8 +68,8 @@ jobs:
         with:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Push to BOTH registries here so layers exist in both places
-          outputs: type=image,name=${{ env.IMAGE_GHCR }},${{ env.IMAGE_HUB }},push-by-digest=true,name-canonical=true,push=true
+          # FIX: Quotes added around "name=...,..." so buildx treats it as one value
+          outputs: type=image,"name=${{ env.IMAGE_GHCR }},${{ env.IMAGE_HUB }}",push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=build-${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=build-${{ matrix.platform }}
 
