@@ -6,6 +6,11 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  # Define image names once to ensure consistency and prevent cross-contamination
+  IMAGE_GHCR: ghcr.io/sharkyrawr/node-docker-buildenv
+  IMAGE_HUB: docker.io/${{ vars.DOCKERHUB_USERNAME }}/node-docker-buildenv
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -45,8 +50,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/sharkyrawr/node-docker-buildenv
-            docker.io/${{ vars.DOCKERHUB_USERNAME }}/node-docker-buildenv
+            ${{ env.IMAGE_GHCR }}
+            ${{ env.IMAGE_HUB }}
           tags: |
             type=raw,value=latest
             type=sha
@@ -63,7 +68,8 @@ jobs:
         with:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,name=ghcr.io/sharkyrawr/node-docker-buildenv,push-by-digest=true,name-canonical=true,push=true
+          # Push to BOTH registries here so layers exist in both places
+          outputs: type=image,name=${{ env.IMAGE_GHCR }},${{ env.IMAGE_HUB }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=build-${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=build-${{ matrix.platform }}
 
@@ -73,14 +79,20 @@ jobs:
           digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
 
+      - name: Prepare artifact name
+        run: |
+          # Sanitize platform name (linux/amd64 -> linux-amd64) for artifact compatibility
+          platform=${{ matrix.platform }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests
+          # Unique artifact name prevents overwriting
+          name: digests-${{ env.PLATFORM_PAIR }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
-          overwrite: true  # Allow multiple jobs to contribute to same artifact
 
   merge:
     runs-on: ubuntu-latest
@@ -98,7 +110,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: /tmp/digests
-          name: digests
+          pattern: digests-*
+          merge-multiple: true
 
       - name: Login to Github Container registry
         uses: docker/login-action@v3
@@ -119,8 +132,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/sharkyrawr/node-docker-buildenv
-            docker.io/${{ vars.DOCKERHUB_USERNAME }}/node-docker-buildenv
+            ${{ env.IMAGE_GHCR }}
+            ${{ env.IMAGE_HUB }}
           tags: |
             type=raw,value=latest
             type=sha
@@ -128,36 +141,38 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # 1. Create GHCR Manifest (referencing GHCR layers)
       - name: Create manifest list and push to GHCR
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map(select(startswith("ghcr.io"))) | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf 'ghcr.io/sharkyrawr/node-docker-buildenv@sha256:%s ' *)
+            $(printf '${{ env.IMAGE_GHCR }}@sha256:%s ' *)
 
+      # 2. Create Docker Hub Manifest (referencing Docker Hub layers)
       - name: Create manifest list and push to Docker Hub
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map(select(startswith("docker.io"))) | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf 'ghcr.io/sharkyrawr/node-docker-buildenv@sha256:%s ' *)
+            $(printf '${{ env.IMAGE_HUB }}@sha256:%s ' *)
 
       - name: Inspect image
         id: inspect
         run: |
-          docker buildx imagetools inspect ghcr.io/sharkyrawr/node-docker-buildenv:latest --format '{{json .}}' > /tmp/ghcr-inspect.json
-          docker buildx imagetools inspect docker.io/${{ vars.DOCKERHUB_USERNAME }}/node-docker-buildenv:latest --format '{{json .}}' > /tmp/dockerhub-inspect.json
+          docker buildx imagetools inspect ${{ env.IMAGE_GHCR }}:latest --format '{{json .}}' > /tmp/ghcr-inspect.json
+          docker buildx imagetools inspect ${{ env.IMAGE_HUB }}:latest --format '{{json .}}' > /tmp/dockerhub-inspect.json
           echo "ghcr_digest=$(jq -r '.manifest.digest' /tmp/ghcr-inspect.json)" >> $GITHUB_OUTPUT
           echo "dockerhub_digest=$(jq -r '.manifest.digest' /tmp/dockerhub-inspect.json)" >> $GITHUB_OUTPUT
 
       - name: Generate artifact attestation (Docker Hub)
         uses: actions/attest-build-provenance@v3
         with:
-          subject-name: docker.io/${{ vars.DOCKERHUB_USERNAME }}/node-docker-buildenv
+          subject-name: ${{ env.IMAGE_HUB }}
           subject-digest: ${{ steps.inspect.outputs.dockerhub_digest }}
           push-to-registry: true
 
       - name: Generate artifact attestation (GHCR)
         uses: actions/attest-build-provenance@v3
         with:
-          subject-name: ghcr.io/sharkyrawr/node-docker-buildenv
+          subject-name: ${{ env.IMAGE_GHCR }}
           subject-digest: ${{ steps.inspect.outputs.ghcr_digest }}
           push-to-registry: true
