@@ -9,7 +9,7 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN curl -fsSL https://get.docker.com -o get-docker.sh && chmod 755 get-docker.sh && ./get-docker.sh && rm ./get-docker.sh
 
 LABEL org.opencontainers.image.title="node-25-docker" \
-      org.opencontainers.image.description="Node.js 25:trixie base image with Docker client installed" \
+      org.opencontainers.image.description="node:25-trixie base image with Docker client and pnpm installed" \
       org.opencontainers.image.authors="SharkyRawr" \
       org.opencontainers.image.url="https://github.com/SharkyRawr/node-docker-buildenv" \
       org.opencontainers.image.source="https://github.com/SharkyRawr/node-docker-buildenv" \
