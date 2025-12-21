@@ -1,5 +1,5 @@
 FROM node:25-trixie
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y git-lfs && apt clean && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y git-lfs unzip curl wget ca-certificates && apt clean && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
 
 # Install pnpm
 RUN curl -fsSL https://get.pnpm.io/install.sh -o install-pnpm.sh && chmod +x install-pnpm.sh && SHELL=bash ./install-pnpm.sh && rm install-pnpm.sh
