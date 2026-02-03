@@ -1,4 +1,4 @@
-FROM node:25-trixie
+FROM node:lts-trixie
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y git-lfs unzip curl wget ca-certificates && apt clean && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
 
 # Install pnpm
