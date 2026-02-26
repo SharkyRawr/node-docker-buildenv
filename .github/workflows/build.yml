@@ -6,6 +6,10 @@ on:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   # Define image names once to ensure consistency and prevent cross-contamination
   IMAGE_GHCR: ghcr.io/sharkyrawr/node-docker-buildenv
