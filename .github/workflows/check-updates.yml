@@ -1,0 +1,128 @@
+name: Dependency Update Check
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+env:
+  IMAGE_GHCR: ghcr.io/sharkyrawr/node-docker-buildenv
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      node_update: ${{ steps.check-node.outputs.updated }}
+      pnpm_update: ${{ steps.check-pnpm.outputs.updated }}
+      docker_update: ${{ steps.check-docker.outputs.updated }}
+      any_update: ${{ steps.check-any.outputs.any_update }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/previous-versions.txt
+          sparse-checkout-cone-mode: false
+
+      - name: Check for Node.js update
+        id: check-node
+        run: |
+          LATEST_DIGEST=$(curl -s "https://hub.docker.com/v2/repositories/library/node/tags/lts-trixie" | jq -r '.digest // .images[0].digest // empty')
+          echo "Latest node digest: $LATEST_DIGEST"
+          echo "latest_digest=$LATEST_DIGEST" >> $GITHUB_OUTPUT
+
+          PREV_DIGEST=$(grep "^node=" .github/previous-versions.txt 2>/dev/null | cut -d= -f2)
+          if [[ -n "$PREV_DIGEST" && -n "$LATEST_DIGEST" && "$PREV_DIGEST" != "$LATEST_DIGEST" ]]; then
+            echo "updated=true" >> $GITHUB_OUTPUT
+            echo "Node update detected: $PREV_DIGEST -> $LATEST_DIGEST"
+          else
+            echo "updated=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for pnpm update
+        id: check-pnpm
+        run: |
+          LATEST_VERSION=$(curl -fsSL https://get.pnpm.io/latest-version)
+          echo "Latest pnpm version: $LATEST_VERSION"
+          echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+
+          PREV_VERSION=$(grep "^pnpm=" .github/previous-versions.txt 2>/dev/null | cut -d= -f2)
+          if [[ -n "$PREV_VERSION" && "$PREV_VERSION" != "$LATEST_VERSION" ]]; then
+            echo "updated=true" >> $GITHUB_OUTPUT
+            echo "pnpm update: $PREV_VERSION -> $LATEST_VERSION"
+          else
+            echo "updated=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for Docker update
+        id: check-docker
+        run: |
+          LATEST_VERSION=$(curl -s https://api.github.com/repos/docker/cli/releases/latest | jq -r '.tag_name' | sed 's/v//')
+          echo "Latest Docker version: $LATEST_VERSION"
+          echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+
+          PREV_VERSION=$(grep "^docker=" .github/previous-versions.txt 2>/dev/null | cut -d= -f2)
+          if [[ -n "$PREV_VERSION" && "$PREV_VERSION" != "$LATEST_VERSION" ]]; then
+            echo "updated=true" >> $GITHUB_OUTPUT
+            echo "Docker update: $PREV_VERSION -> $LATEST_VERSION"
+          else
+            echo "updated=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine if any update exists
+        id: check-any
+        run: |
+          if [[ "${{ steps.check-node.outputs.updated }}" == "true" ]] || \
+             [[ "${{ steps.check-pnpm.outputs.updated }}" == "true" ]] || \
+             [[ "${{ steps.check-docker.outputs.updated }}" == "true" ]]; then
+            echo "any_update=true" >> $GITHUB_OUTPUT
+          else
+            echo "any_update=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update version tracking
+        run: |
+          mkdir -p .github
+          {
+            echo "node=${{ steps.check-node.outputs.latest_digest }}"
+            echo "pnpm=${{ steps.check-pnpm.outputs.latest_version }}"
+            echo "docker=${{ steps.check-docker.outputs.latest_version }}"
+          } > .github/previous-versions.txt
+
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .github/previous-versions.txt
+          if git commit -m "chore: update dependency version tracking"; then
+            git pull --rebase origin main
+            git push origin main
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Update Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency | Update Available |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|-------------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Node.js (lts-trixie) | ${{ steps.check-node.outputs.updated }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| pnpm | ${{ steps.check-pnpm.outputs.updated }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker | ${{ steps.check-docker.outputs.updated }} |" >> $GITHUB_STEP_SUMMARY
+
+  trigger-build:
+    runs-on: ubuntu-latest
+    needs: check-updates
+    if: needs.check-updates.outputs.any_update == 'true'
+    permissions:
+      actions: write
+    steps:
+      - name: Trigger build workflow
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'build.yml',
+              ref: 'main'
+            });
+            console.log('Build workflow triggered successfully');
