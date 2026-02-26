@@ -44,7 +44,7 @@ jobs:
       - name: Check for pnpm update
         id: check-pnpm
         run: |
-          LATEST_VERSION=$(curl -fsSL https://get.pnpm.io/latest-version)
+          LATEST_VERSION=$(curl -fsSL https://registry.npmjs.org/pnpm/latest | jq -r '.version')
           echo "Latest pnpm version: $LATEST_VERSION"
           echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
 
