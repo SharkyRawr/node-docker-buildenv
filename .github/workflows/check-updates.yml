@@ -61,7 +61,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          LATEST_VERSION=$(curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/docker/cli/releases/latest | jq -r '.tag_name' | sed 's/v//')
+          LATEST_VERSION=$(curl -s -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/docker/cli/tags?per_page=20" | jq -r '[.[] | select(.name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")) | .name][0]' | sed 's/v//')
           echo "Latest Docker version: $LATEST_VERSION"
           echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
 
