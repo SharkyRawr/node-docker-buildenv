@@ -2,7 +2,7 @@ FROM node:lts-trixie
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y git-lfs unzip curl wget ca-certificates sudo && apt clean && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
 
 # Install pnpm
-RUN curl -fsSL https://get.pnpm.io/install.sh -o install-pnpm.sh && chmod +x install-pnpm.sh && SHELL=bash PNPM_VERSION=11.0.0-rc.0 ./install-pnpm.sh && rm install-pnpm.sh
+RUN curl -fsSL https://get.pnpm.io/install.sh -o install-pnpm.sh && chmod +x install-pnpm.sh && SHELL=bash PNPM_VERSION=11.0.0-rc.1 ./install-pnpm.sh && rm install-pnpm.sh
 ENV PNPM_HOME="/root/.local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
