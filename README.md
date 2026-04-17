@@ -5,7 +5,7 @@ A Docker image based on Node.js 25 (Debian Trixie) with additional build tools f
 ## Features
 
 - **Node.js 25**: Latest Node.js runtime on Debian Trixie base
-- **pnpm**: Fast, disk space efficient package manager
+- **pnpm**: Pinned via Corepack for consistent CI installs
 - **Docker Client**: For Docker-in-Docker scenarios and container builds
 - **Git LFS**: Support for Git Large File Storage
 - **Build-ready**: Pre-configured environment for CI/CD pipelines
@@ -24,6 +24,12 @@ docker pull ghcr.io/sharkyrawr/node-docker-buildenv:latest
 git clone https://github.com/SharkyRawr/node-docker-buildenv.git
 cd node-docker-buildenv
 docker build -t node-docker-buildenv .
+```
+
+To override the bundled pnpm version at build time:
+
+```bash
+docker build --build-arg PNPM_VERSION=11.0.0-rc.1 -t node-docker-buildenv .
 ```
 
 ### Use in CI/CD
@@ -90,6 +96,7 @@ docker run -it --rm \
 - The image includes the Docker client, which requires mounting the Docker socket for Docker-in-Docker scenarios
 - When mounting `/var/run/docker.sock`, ensure you trust the code running in the container
 - Consider using specific version tags in production rather than `latest`
+- Node.js 25 no longer bundles Corepack, so this image installs Corepack explicitly before activating pnpm
 
 ## Contributing
 
