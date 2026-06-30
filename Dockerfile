@@ -1,5 +1,5 @@
 FROM node:lts-trixie
-ARG PNPM_VERSION=11.7.0
+ARG PNPM_VERSION=11.9.0
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y git-lfs unzip curl wget ca-certificates sudo && apt clean && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
 
 # Node.js v25+ no longer ships Corepack, so install it explicitly and
