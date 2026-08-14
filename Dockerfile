@@ -1,5 +1,5 @@
 FROM node:lts-trixie
-ARG PNPM_VERSION=11.9.0
+ARG PNPM_VERSION=11.21.0
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y git-lfs unzip curl wget ca-certificates sudo && apt clean && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
 
 # Node.js v25+ no longer ships Corepack, so install it explicitly and
@@ -11,8 +11,8 @@ RUN npm install --global corepack@latest \
 
 RUN curl -fsSL https://get.docker.com -o get-docker.sh && chmod 755 get-docker.sh && ./get-docker.sh && rm ./get-docker.sh
 
-LABEL org.opencontainers.image.title="node-25-docker" \
-      org.opencontainers.image.description="node:25-trixie base image with Docker client and pinned pnpm installed" \
+LABEL org.opencontainers.image.title="node-lts-docker" \
+      org.opencontainers.image.description="node:lts-trixie base image with Docker client and pinned pnpm installed" \
       org.opencontainers.image.authors="SharkyRawr" \
       org.opencontainers.image.url="https://github.com/SharkyRawr/node-docker-buildenv" \
       org.opencontainers.image.source="https://github.com/SharkyRawr/node-docker-buildenv" \
